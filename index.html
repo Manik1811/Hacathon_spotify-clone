@@ -1,0 +1,2716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify - Web Player: Music for everyone</title>
+  <link rel="icon" href="https://open.spotifycdn.com/cdn/images/favicon.0751a1c8.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --spotify-green: #1DB954;
+      --spotify-green-hover: #1ed760;
+      --spotify-black: #121212;
+      --spotify-dark-gray: #181818;
+      --spotify-light-gray: #282828;
+      --spotify-white: #FFFFFF;
+      --spotify-light-white: rgba(255, 255, 255, 0.9);
+      --spotify-hover-white: rgba(255, 255, 255, 0.7);
+      --spotify-error: #F15E6C;
+      --spotify-warning: #FECB52;
+      --spotify-success: #1DB954;
+      --transition-speed: 0.3s;
+      --border-radius: 8px;
+      --font-family: 'Inter', sans-serif;
+      --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--spotify-black);
+      color: var(--spotify-white);
+      transition: background-color 0.5s ease;
+      overflow-x: hidden;
+    }
+
+    body.light-mode {
+      background-color: #F8F8F8;
+      color: #121212;
+    }
+
+    body.light-mode .topbar, 
+    body.light-mode .sidebar,
+    body.light-mode .now-playing-bar {
+      background-color: #FFFFFF;
+      color: #121212;
+      border-color: #E5E5E5;
+    }
+
+    body.light-mode .card, 
+    body.light-mode .playlist-item,
+    body.light-mode .mood-recommender,
+    body.light-mode .listening-stats,
+    body.light-mode .discovery-feature {
+      background-color: #FFFFFF;
+      color: #121212;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    body.light-mode .sidebar-item:hover {
+      background-color: #F0F0F0;
+    }
+
+    body.light-mode .spotify-btn {
+      background-color: var(--spotify-green);
+      color: white;
+    }
+
+    body.light-mode .nav-button {
+      background-color: rgba(0, 0, 0, 0.1);
+      color: #121212;
+    }
+
+    body.light-mode .genre-chip {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    body.light-mode .genre-chip:hover, 
+    body.light-mode .genre-chip.active {
+      background-color: var(--spotify-green);
+      color: white;
+    }
+
+    body.light-mode .stats-card {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    body.light-mode .progress-container,
+    body.light-mode .volume-bar {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    /* Layout */
+    .container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background-color: #000000;
+      flex-shrink: 0;
+      overflow-y: auto;
+      padding: 24px 0;
+      z-index: 3;
+      transition: width 0.3s ease, left 0.3s ease;
+    }
+
+    .sidebar-logo {
+      padding: 0 24px 24px;
+    }
+
+    .sidebar-logo svg {
+      width: 130px;
+      height: auto;
+    }
+
+    .sidebar-nav {
+      margin-bottom: 24px;
+    }
+
+    .sidebar-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--spotify-hover-white);
+      padding: 0 24px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      height: 40px;
+      color: var(--spotify-hover-white);
+      cursor: pointer;
+      transition: all var(--transition-speed);
+    }
+
+    .sidebar-item:hover {
+      color: var(--spotify-white);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-item.active {
+      color: var(--spotify-white);
+      position: relative;
+    }
+
+    .sidebar-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background-color: var(--spotify-green);
+    }
+
+    .sidebar-item i {
+      margin-right: 16px;
+      font-size: 20px;
+    }
+
+    .playlists {
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .playlist-item {
+      padding: 8px 24px;
+      color: var(--spotify-hover-white);
+      cursor: pointer;
+      transition: color var(--transition-speed);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .playlist-item:hover {
+      color: var(--spotify-white);
+    }
+
+    /* Main content */
+    .main-content {
+      flex-grow: 1;
+      overflow-y: auto;
+      position: relative;
+      padding-bottom: 90px;
+    }
+
+    .topbar {
+      height: 64px;
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      transition: background-color 0.3s ease;
+    }
+
+    .topbar.scrolled {
+      background-color: var(--spotify-black);
+    }
+
+    .nav-buttons {
+      display: flex;
+      margin-right: 16px;
+    }
+
+    .nav-button {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+    }
+
+    .nav-button:hover {
+      transform: scale(1.05);
+    }
+
+    .menu-toggle {
+      display: none;
+      font-size: 24px;
+      cursor: pointer;
+      margin-right: 16px;
+    }
+
+    .search-container {
+      position: relative;
+      margin-right: auto;
+    }
+
+    .search-input {
+      background-color: #FFFFFF;
+      border: none;
+      height: 40px;
+      border-radius: 20px;
+      padding: 0 40px 0 16px;
+      font-family: var(--font-family);
+      font-size: 14px;
+      width: 360px;
+      outline: none;
+      transition: all var(--transition-speed);
+    }
+
+    .search-input:focus {
+      box-shadow: 0 0 0 2px var(--spotify-green);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #121212;
+    }
+
+    .search-results {
+      position: absolute;
+      top: 44px;
+      left: 0;
+      width: 100%;
+      background-color: #fff;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      z-index: 1000;
+    }
+
+    .search-results.active {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      cursor: pointer;
+      color: #121212;
+    }
+
+    .search-result-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .search-result-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      margin-right: 12px;
+    }
+
+    .search-result-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .search-result-title {
+      font-weight: 500;
+    }
+
+    .search-result-subtitle {
+      font-size: 12px;
+      color: #6c6c6c;
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+    }
+
+    .user-button {
+      display: flex;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 23px;
+      padding: 2px;
+      cursor: pointer;
+      margin-left: 16px;
+      transition: background-color var(--transition-speed);
+    }
+
+    .user-button:hover {
+      background-color: rgba(0, 0, 0, 0.9);
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background-color: #535353;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--spotify-white);
+      font-weight: bold;
+    }
+
+    .user-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 8px 0 8px;
+    }
+
+    /* Dropdown Menu */
+    .dropdown-menu {
+      position: absolute;
+      top: 60px;
+      right: 32px;
+      background-color: #282828;
+      border-radius: 4px;
+      box-shadow: 0 16px 24px rgba(0, 0, 0, 0.3);
+      width: 200px;
+      z-index: 1000;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.3s ease;
+    }
+
+    .dropdown-menu.active {
+      max-height: 300px;
+    }
+
+    .dropdown-item {
+      padding: 12px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color var(--transition-speed);
+    }
+
+    .dropdown-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    body.light-mode .dropdown-menu {
+      background-color: #fff;
+      box-shadow: 0 16px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    body.light-mode .dropdown-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    /* Content */
+    .content {
+      padding: 24px 32px;
+    }
+
+    .greeting {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .see-all {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--spotify-hover-white);
+      cursor: pointer;
+      transition: color var(--transition-speed);
+    }
+
+    .see-all:hover {
+      text-decoration: underline;
+      color: var(--spotify-white);
+    }
+
+    .cards-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .card {
+      background-color: var(--spotify-dark-gray);
+      border-radius: var(--border-radius);
+      padding: 16px;
+      transition: background-color var(--transition-speed);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .card:hover {
+      background-color: var(--spotify-light-gray);
+    }
+
+    .card:hover .play-button {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card-img {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: var(--border-radius);
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-description {
+      font-size: 14px;
+      color: var(--spotify-hover-white);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .play-button {
+      position: absolute;
+      bottom: 105px;
+      right: 24px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: var(--spotify-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all var(--transition-speed);
+    }
+
+    .play-button:hover {
+      transform: scale(1.05);
+      background-color: var(--spotify-green-hover);
+    }
+
+    .play-button i {
+      font-size: 24px;
+      margin-left: 3px;
+    }
+
+    /* Now playing bar */
+    .now-playing-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 90px;
+      background-color: #181818;
+      border-top: 1px solid #282828;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      z-index: 4;
+    }
+
+    .now-playing-left {
+      width: 30%;
+      min-width: 180px;
+      display: flex;
+      align-items: center;
+    }
+
+    .now-playing-cover {
+      width: 56px;
+      height: 56px;
+      border-radius: 4px;
+      margin-right: 14px;
+      flex-shrink: 0;
+    }
+
+    .now-playing-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: calc(100% - 70px);
+    }
+
+    .now-playing-song {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .now-playing-artist {
+      font-size: 12px;
+      color: var(--spotify-hover-white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .now-playing-like {
+      margin-left: 16px;
+      color: var(--spotify-hover-white);
+      cursor: pointer;
+      transition: all var(--transition-speed);
+    }
+
+    .now-playing-like:hover {
+      color: var(--spotify-white);
+    }
+
+    .now-playing-like.active {
+      color: var(--spotify-green);
+    }
+
+    .now-playing-center {
+      width: 40%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .playback-controls {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .playback-control {
+      color: var(--spotify-hover-white);
+      cursor: pointer;
+      margin: 0 8px;
+      font-size: 16px;
+      transition: all var(--transition-speed);
+    }
+
+    .playback-control:hover {
+      color: var(--spotify-white);
+      transform: scale(1.05);
+    }
+
+    .playback-control.play-pause {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: var(--spotify-white);
+      color: var(--spotify-black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 16px;
+      font-size: 18px;
+    }
+
+    .playback-control.play-pause:hover {
+      transform: scale(1.05);
+    }
+
+    .playback-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    .playback-time {
+      font-size: 12px;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .progress-container {
+      flex-grow: 1;
+      height: 4px;
+      background-color: #535353;
+      border-radius: 2px;
+      margin: 0 8px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background-color: var(--spotify-hover-white);
+      border-radius: 2px;
+      width: 30%;
+      position: relative;
+      transition: width 0.1s linear;
+    }
+
+    .progress-container:hover .progress-bar {
+      background-color: var(--spotify-green);
+    }
+
+    .progress-container:hover .progress-bar::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: var(--spotify-white);
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .now-playing-right {
+      width: 30%;
+      min-width: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .volume-container {
+      width: 120px;
+      display: flex;
+      align-items: center;
+    }
+
+    .volume-icon {
+      margin-right: 8px;
+      color: var(--spotify-hover-white);
+      cursor: pointer;
+      transition: color var(--transition-speed);
+    }
+
+    .volume-icon:hover {
+      color: var(--spotify-white);
+    }
+
+    .volume-bar {
+      flex-grow: 1;
+      height: 4px;
+      background-color: #535353;
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .volume-level {
+      height: 100%;
+      background-color: var(--spotify-hover-white);
+      border-radius: 2px;
+      width: 65%;
+      position: relative;
+      transition: width 0.1s ease;
+    }
+
+    .volume-bar:hover .volume-level {
+      background-color: var(--spotify-green);
+    }
+
+    .volume-bar:hover .volume-level::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: var(--spotify-white);
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    /* New Feature: Mood-based recommendations */
+    .mood-recommender {
+      background-color: var(--spotify-dark-gray);
+      padding: 24px;
+      border-radius: var(--border-radius);
+      margin-bottom: 48px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .mood-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .mood-title span {
+      margin-left: 8px;
+    }
+
+    .mood-input {
+      display: flex;
+      margin-bottom: 16px;
+    }
+
+    .mood-field {
+      flex-grow: 1;
+      height: 40px;
+      background-color: #FFFFFF;
+      border: none;
+      border-radius: 4px 0 0 4px;
+      padding: 0 16px;
+      font-family: var(--font-family);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .mood-button {
+      height: 40px;
+      background-color: var(--spotify-green);
+      color: var(--spotify-white);
+      border: none;
+      border-radius: 0 4px 4px 0;
+      padding: 0 16px;
+      font-family: var(--font-family);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color var(--transition-speed);
+    }
+
+    .mood-button:hover {
+      background-color: #1ed760;
+    }
+
+    .mood-results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-gap: 16px;
+    }
+
+    .mood-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .mood-tag {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+    }
+
+    .mood-tag:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* New Feature: Listening Stats */
+    .listening-stats {
+      background-color: var(--spotify-dark-gray);
+      padding: 24px;
+      border-radius: var(--border-radius);
+      margin-bottom: 48px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .stats-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+    }
+
+    .stats-title span {
+      margin-left: 8px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-gap: 24px;
+    }
+
+    .stats-card {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
+      padding: 16px;
+    }
+
+    .stats-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stats-time-range {
+      display: flex;
+      gap: 8px;
+    }
+
+    .time-option {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+    }
+
+    .time-option:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .time-option.active {
+      background-color: rgba(255, 255, 255, 0.2);
+      font-weight: 600;
+    }
+
+    .genre-bar {
+      height: 8px;
+      background-color: #535353;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .genre-progress {
+      height: 100%;
+      border-radius: 4px;
+      animation: genreGrow 1.5s ease-out forwards;
+      width: 0;
+    }
+
+    @keyframes genreGrow {
+      to {
+        width: var(--width);
+      }
+    }
+
+    .genre-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .genre-name {
+      font-size: 14px;
+    }
+
+    .genre-percent {
+      font-size: 14px;
+      color: var(--spotify-hover-white);
+    }
+
+    .time-chart {
+      height: 120px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding-top: 16px;
+    }
+
+    .time-bar {
+      width: 8px;
+      background-color: var(--spotify-green);
+      border-radius: 4px 4px 0 0;
+      animation: timeBarGrow 1.5s ease-out forwards;
+      height: 0;
+      position: relative;
+    }
+
+    .time-bar:hover::after {
+      content: attr(data-hours);
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #000;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 5;
+    }
+
+    @keyframes timeBarGrow {
+      to {
+        height: var(--height);
+      }
+    }
+
+    .time-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+
+    .time-label {
+      font-size: 12px;
+      color: var(--spotify-hover-white);
+      width: 8px;
+      text-align: center;
+    }
+
+    /* Toggle Switch */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 20px;
+      padding: 4px 8px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+
+    .theme-icon {
+      font-size: 16px;
+      margin-right: 8px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--spotify-green);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* New Feature: Personalized Discovery */
+    .discovery-feature {
+      background-color: var(--spotify-dark-gray);
+      padding: 24px;
+      border-radius: var(--border-radius);
+      margin-bottom: 48px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .discovery-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .discovery-title span {
+      margin-left: 8px;
+    }
+
+    .genre-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .genre-chip {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+    }
+
+    .genre-chip:hover, .genre-chip.active {
+      background-color: var(--spotify-green);
+      color: black;
+    }
+
+    .spotify-btn {
+      background-color: var(--spotify-green);
+      color: black;
+      font-weight: 700;
+      border: none;
+      border-radius: 24px;
+      padding: 12px 32px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+      display: inline-block;
+      margin-top: 16px;
+    }
+
+    .spotify-btn:hover {
+      background-color: #1ed760;
+      transform: scale(1.03);
+    }
+
+    .hero {
+      position: relative;
+      height: 300px;
+      overflow: hidden;
+      border-radius: var(--border-radius);
+      margin-bottom: 48px;
+      display: flex;
+      align-items: center;
+      padding: 32px;
+    }
+
+    .hero-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+      filter: brightness(0.5);
+      transition: transform 0.5s ease;
+    }
+
+    .hero:hover .hero-img {
+      transform: scale(1.05);
+    }
+
+    .hero-content {
+      max-width: 600px;
+    }
+
+    .hero-title {
+      font-size: 48px;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .hero-description {
+      font-size: 18px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* New Feature: Collaborative playlist */
+    .collaborative-playlist {
+      background-color: var(--spotify-dark-gray);
+      padding: 24px;
+      border-radius: var(--border-radius);
+      margin-bottom: 48px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .collab-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .collab-title span {
+      margin-left: 8px;
+    }
+
+    .collab-description {
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .collab-code {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-value {
+      font-size: 20px;
+      letter-spacing: 4px;
+      font-weight: 700;
+    }
+
+    .copy-btn {
+      background-color: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: var(--spotify-white);
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+    }
+
+    .copy-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .collab-members {
+      margin-bottom: 16px;
+    }
+
+    .members-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .members-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .member {
+      display: flex;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 8px 12px;
+      border-radius: 20px;
+    }
+
+    .member-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background-color: var(--spotify-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* New feature: Concert finder */
+    .concert-finder {
+      background-color: var(--spotify-dark-gray);
+      padding: 24px;
+      border-radius: var(--border-radius);
+      margin-bottom: 48px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .concert-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .concert-title span {
+      margin-left: 8px;
+    }
+
+    .location-input {
+      display: flex;
+      margin-bottom: 16px;
+    }
+
+    .location-field {
+      flex-grow: 1;
+      height: 40px;
+      background-color: #FFFFFF;
+      border: none;
+      border-radius: 4px 0 0 4px;
+      padding: 0 16px;
+      font-family: var(--font-family);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .location-button {
+      height: 40px;
+      background-color: var(--spotify-green);
+      color: var(--spotify-white);
+      border: none;
+      border-radius: 0 4px 4px 0;
+      padding: 0 16px;
+      font-family: var(--font-family);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color var(--transition-speed);
+    }
+
+    .location-button:hover {
+      background-color: #1ed760;
+    }
+
+    .concerts-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-gap: 16px;
+    }
+
+    .concert-card {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      transition: transform var(--transition-speed);
+    }
+
+    .concert-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .concert-img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+
+    .concert-info {
+      padding: 16px;
+    }
+
+    .concert-date {
+      font-size: 12px;
+      color: var(--spotify-hover-white);
+      margin-bottom: 4px;
+    }
+
+    .concert-artist {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .concert-venue {
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .ticket-btn {
+      width: 100%;
+      background-color: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: var(--spotify-white);
+      padding: 8px;
+      border-radius: 4px;
+      font-family: var(--font-family);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+    }
+
+    .ticket-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Toast notification */
+    .toast-container {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      z-index: 9999;
+    }
+
+    .toast {
+      background-color: var(--spotify-dark-gray);
+      color: var(--spotify-white);
+      padding: 16px;
+      border-radius: 4px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translateX(120%);
+      animation: slideIn 0.3s forwards, slideOut 0.3s 3s forwards;
+    }
+
+    .toast-icon {
+      margin-right: 12px;
+      font-size: 20px;
+    }
+
+    .toast-success .toast-icon {
+      color: var(--spotify-success);
+    }
+
+    .toast-error .toast-icon {
+      color: var(--spotify-error);
+    }
+
+    .toast-warning .toast-icon {
+      color: var(--spotify-warning);
+    }
+
+    @keyframes slideIn {
+      to {
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideOut {
+      to {
+        transform: translateX(120%);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Loader */
+    .loader {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--spotify-white);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+      .sidebar {
+        width: 200px;
+      }
+      
+      .cards-container {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      }
+    }
+
+    @media (max-width: 992px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .now-playing-right {
+        display: none;
+      }
+      
+      .now-playing-center {
+        width: 50%;
+      }
+      
+      .now-playing-left {
+        width: 50%;
+      }
+      
+      .search-input {
+        width: 240px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -240px;
+        height: 100%;
+        transition: left 0.3s ease;
+        z-index: 1000;
+      }
+      
+      .sidebar.open {
+        left: 0;
+      }
+      
+      .menu-toggle {
+        display: block;
+        margin-right: 16px;
+        font-size: 24px;
+        cursor: pointer;
+      }
+      
+      .cards-container {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+      
+      .search-input {
+        width: 200px;
+      }
+      
+      .hero-title {
+        font-size: 32px;
+      }
+      
+      .hero-description {
+        font-size: 16px;
+      }
+      
+      .concerts-container {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      }
+      
+      .theme-toggle {
+        top: 70px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .now-playing-left {
+        width: 60%;
+      }
+      
+      .now-playing-center {
+        width: 40%;
+      }
+      
+      .cards-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .playback-time {
+        display: none;
+      }
+      
+      .playback-bar {
+        margin: 0;
+      }
+      
+      .hero {
+        height: 200px;
+        padding: 16px;
+      }
+      
+      .hero-title {
+        font-size: 24px;
+      }
+      
+      .hero-description {
+        font-size: 14px;
+      }
+      
+      .greeting {
+        font-size: 24px;
+      }
+      
+      .section-title {
+        font-size: 20px;
+      }
+      
+      .search-input {
+        width: 160px;
+      }
+      
+      .concerts-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="theme-toggle" onclick="toggleTheme()">
+    <span class="theme-icon">🌓</span>
+    <label class="switch">
+      <input type="checkbox" id="themeSwitch">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="container">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 1134 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Black background rounded rectangle -->
+            <path d="M8 171C8 75.5 85.5 0 180 0H954C1048.5 0 1126 75.5 1126 171V171C1126 266.5 1048.5 342 954 342H180C85.5 342 8 266.5 8 171V171Z" fill="black"/>
+            
+            <!-- Spotify icon in green -->
+            <path d="M226.742 136.873C185.155 114.819 107.64 112.499 62.7219 124.958C55.9542 126.832 48.805 123.021 46.9306 116.254C45.0562 109.486 48.8671 102.337 55.6349 100.463C107.64 86.0361 192.692 89.0266 240.936 114.254C247.044 117.5 249.364 125.393 246.117 131.502C242.871 137.499 234.978 139.878 226.742 136.873ZM225.359 179.988C222.678 184.929 216.962 187.303 212.021 184.622C177.542 164.879 118.972 158.653 71.84 169.995C66.28 171.496 60.5638 168.491 59.0627 162.93C57.5617 157.37 60.5662 151.654 66.1265 150.153C119.473 137.375 183.604 144.297 223.376 167.014C228.26 169.76 230.3 175.413 225.359 179.988ZM208.886 221.569C206.769 225.511 202.223 227.38 198.28 225.263C168.329 207.835 124.692 203.894 73.1135 213.601C68.4925 214.536 64.0364 211.769 63.1009 207.148C62.1655 202.527 64.8687 198.071 69.5537 197.136C126.166 186.471 174.159 191.02 208.192 210.963C212.197 213.08 214.004 217.626 208.886 221.569ZM180.061 0.343C85.5608 0.343 9.06079 76.843 9.06079 171.343C9.06079 265.843 85.5608 342.343 180.061 342.343H953.061C1047.56 342.343 1124.06 265.843 1124.06 171.343C1124.06 76.843 1047.56 0.343 953.061 0.343H180.061Z" fill="#1ED760"/>
+            
+            <!-- Text "spotify" instead of individual paths -->
+            <text x="370" y="200" font-family="Arial, sans-serif" font-size="100" font-weight="bold" fill="white">spotify</text>
+          </svg>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="sidebar-item active" onclick="changeView('home')">
+          <i>🏠</i>
+          <span>Home</span>
+        </div>
+        <div class="sidebar-item" onclick="changeView('search')">
+          <i>🔍</i>
+          <span>Search</span>
+        </div>
+        <div class="sidebar-item" onclick="changeView('library')">
+          <i>📚</i>
+          <span>Your Library</span>
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="sidebar-item" onclick="createPlaylist()">
+          <i>➕</i>
+          <span>Create Playlist</span>
+        </div>
+        <div class="sidebar-item" onclick="changeView('liked')">
+          <i>💜</i>
+          <span>Liked Songs</span>
+        </div>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #282828; margin: 8px 24px 16px;">
+
+      <div class="sidebar-title">Your Playlists</div>
+      <div class="playlists">
+        <div class="playlist-item" onclick="showToast('Opening Daily Mix 1')">Daily Mix 1</div>
+        <div class="playlist-item" onclick="showToast('Opening Daily Mix 2')">Daily Mix 2</div>
+        <div class="playlist-item" onclick="showToast('Opening Daily Mix 3')">Daily Mix 3</div>
+        <div class="playlist-item" onclick="showToast('Opening Discover Weekly')">Discover Weekly</div>
+        <div class="playlist-item" onclick="showToast('Opening Release Radar')">Release Radar</div>
+        <div class="playlist-item" onclick="showToast('Opening Summer Hits')">Summer Hits</div>
+        <div class="playlist-item" onclick="showToast('Opening Workout Mix')">Workout Mix</div>
+        <div class="playlist-item" onclick="showToast('Opening Chill Vibes')">Chill Vibes</div>
+        <div class="playlist-item" onclick="showToast('Opening Road Trip')">Road Trip</div>
+        <div class="playlist-item" onclick="showToast('Opening Study Session')">Study Session</div>
+      </div>
+    </div>
+
+    <div class="main-content" id="mainContent">
+      <div class="topbar" id="topbar">
+        <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
+        <div class="nav-buttons">
+          <div class="nav-button" onclick="navigateBack()">◀</div>
+          <div class="nav-button" onclick="navigateForward()">▶</div>
+        </div>
+        <div class="search-container">
+          <input type="text" class="search-input" placeholder="What do you want to listen to?" id="searchInput" oninput="handleSearch()">
+          <span class="search-icon">🔍</span>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <div class="user-menu">
+          <div class="user-button" onclick="toggleDropdown()">
+            <div class="user-avatar">U</div>
+            <div class="user-name">User</div>
+            <span>▼</span>
+          </div>
+          <div class="dropdown-menu" id="userDropdown">
+            <div class="dropdown-item" onclick="showToast('Opening account settings')">Account</div>
+            <div class="dropdown-item" onclick="showToast('Opening profile')">Profile</div>
+            <div class="dropdown-item" onclick="showToast('Opening settings')">Settings</div>
+            <div class="dropdown-item" onclick="showToast('Logging out')">Log out</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content" id="homeContent">
+        <div class="hero">
+          <img src="https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80" class="hero-img">
+          <div class="hero-content">
+            <h1 class="hero-title">Spotify Premium</h1>
+            <p class="hero-description">Get 3 months of Premium for free. Enjoy ad-free music listening, offline playback, and more. Cancel anytime.</p>
+            <button class="spotify-btn" onclick="showToast('Premium offer selected!')">GET 3 MONTHS FREE</button>
+          </div>
+        </div>
+
+        <h2 class="greeting" id="greeting">Good afternoon</h2>
+
+        <div class="cards-container">
+          <div class="card" onclick="playSong('Chill Hits', 'Kick back to the best new and recent chill hits', 'https://i.scdn.co/image/ab67706f000000022ce7859fa69eb5470fc492b1')">
+            <img src="https://i.scdn.co/image/ab67706f000000022ce7859fa69eb5470fc492b1" class="card-img" alt="Chill Hits">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">Chill Hits</div>
+            <div class="card-description">Kick back to the best new and recent chill hits</div>
+          </div>
+          <div class="card" onclick="playSong('Today\'s Top Hits', 'Taylor Swift is on top of the Hottest 50!', 'https://i.scdn.co/image/ab67706f00000002ca64210a23622427ec19c4a6')">
+            <img src="https://i.scdn.co/image/ab67706f00000002ca64210a23622427ec19c4a6" class="card-img" alt="Today's Top Hits">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">Today's Top Hits</div>
+            <div class="card-description">Taylor Swift is on top of the Hottest 50!</div>
+          </div>
+          <div class="card" onclick="playSong('RapCaviar', 'Music from Drake, Kendrick Lamar and more', 'https://i.scdn.co/image/ab67706f00000002fe6d8d1019d5b302213e3730')">
+            <img src="https://i.scdn.co/image/ab67706f00000002fe6d8d1019d5b302213e3730" class="card-img" alt="RapCaviar">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">RapCaviar</div>
+            <div class="card-description">Music from Drake, Kendrick Lamar and more</div>
+          </div>
+          <div class="card" onclick="playSong('Rock Classics', 'Rock legends & epic songs that continue to inspire generations', 'https://i.scdn.co/image/ab67706f000000025551996f500ba876bda73fa5')">
+            <img src="https://i.scdn.co/image/ab67706f000000025551996f500ba876bda73fa5" class="card-img" alt="Rock Classics">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">Rock Classics</div>
+            <div class="card-description">Rock legends & epic songs that continue to inspire generations</div>
+          </div>
+          <div class="card" onclick="playSong('All Out 80s', 'The biggest songs of the 1980s.', 'https://i.scdn.co/image/ab67706f00000002b0fe40a6e1692822f5a9d8f1')">
+            <img src="https://i.scdn.co/image/ab67706f00000002b0fe40a6e1692822f5a9d8f1" class="card-img" alt="All Out 80s">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">All Out 80s</div>
+            <div class="card-description">The biggest songs of the 1980s.</div>
+          </div>
+          <div class="card" onclick="playSong('Peaceful Piano', 'Peaceful piano to help you slow down, breathe, and relax.', 'https://i.scdn.co/image/ab67706f000000025d87659dcadef82dd0e73f56')">
+            <img src="https://i.scdn.co/image/ab67706f000000025d87659dcadef82dd0e73f56" class="card-img" alt="Peaceful Piano">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">Peaceful Piano</div>
+            <div class="card-description">Peaceful piano to help you slow down, breathe, and relax.</div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <span>Made For You</span>
+          <span class="see-all" onclick="showToast('View all Made For You content')">See all</span>
+        </div>
+
+        <div class="cards-container">
+          <div class="card" onclick="playSong('Daily Mix 1', 'The Weeknd, Doja Cat, Post Malone and more', 'https://dailymix-images.scdn.co/v2/img/ab6761610000e5ebcdce7620dc940db079bf4952/1/en/default')">
+            <img src="https://dailymix-images.scdn.co/v2/img/ab6761610000e5ebcdce7620dc940db079bf4952/1/en/default" class="card-img" alt="Daily Mix 1">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">Daily Mix 1</div>
+            <div class="card-description">The Weeknd, Doja Cat, Post Malone and more</div>
+          </div>
+          <div class="card" onclick="playSong('Daily Mix 2', 'Drake, Kendrick Lamar, J. Cole and more', 'https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/daily/2/ab67616d0000b2733c4b6be1a9e19cc1a8beb326/en')">
+            <img src="https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/daily/2/ab67616d0000b2733c4b6be1a9e19cc1a8beb326/en" class="card-img" alt="Daily Mix 2">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">Daily Mix 2</div>
+            <div class="card-description">Drake, Kendrick Lamar, J. Cole and more</div>
+          </div>
+          <div class="card" onclick="playSong('Daily Mix 3', 'Calvin Harris, David Guetta, Avicii and more', 'https://dailymix-images.scdn.co/v2/img/ab6761610000e5eb989ed05e1f0570cc4726c2d3/3/en/default')">
+            <img src="https://dailymix-images.scdn.co/v2/img/ab6761610000e5eb989ed05e1f0570cc4726c2d3/3/en/default" class="card-img" alt="Daily Mix 3">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">Daily Mix 3</div>
+            <div class="card-description">Calvin Harris, David Guetta, Avicii and more</div>
+          </div>
+          <div class="card" onclick="playSong('Discover Weekly', 'Your weekly mixtape of fresh music. Enjoy new discoveries and deep cuts chosen just for you.', 'https://newjams-images.scdn.co/image/ab676477000033ad/dt/v3/discover-weekly/aAbca4VNfzWuUCQ_FGiEFA==/bmVuZW5lbmVuZW5lbmVuZQ==')">
+            <img src="https://newjams-images.scdn.co/image/ab676477000033ad/dt/v3/discover-weekly/aAbca4VNfzWuUCQ_FGiEFA==/bmVuZW5lbmVuZW5lbmVuZQ==" class="card-img" alt="Discover Weekly">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">Discover Weekly</div>
+            <div class="card-description">Your weekly mixtape of fresh music. Enjoy new discoveries and deep cuts chosen just for you.</div>
+          </div>
+        </div>
+
+        <!-- New Feature: Mood-based Music Recommendations -->
+        <div class="mood-recommender">
+          <div class="mood-title">
+            <span>🎭</span>
+            <span>Mood-Based Music Recommendations</span>
+          </div>
+          <div class="mood-suggestions">
+            <div class="mood-tag" onclick="setMood('happy')">Happy</div>
+            <div class="mood-tag" onclick="setMood('sad')">Sad</div>
+            <div class="mood-tag" onclick="setMood('energetic')">Energetic</div>
+            <div class="mood-tag" onclick="setMood('relaxed')">Relaxed</div>
+            <div class="mood-tag" onclick="setMood('chill')">Chill</div>
+            <div class="mood-tag" onclick="setMood('focused')">Focused</div>
+            <div class="mood-tag" onclick="setMood('romantic')">Romantic</div>
+          </div>
+          <div class="mood-input">
+            <input type="text" class="mood-field" id="moodInput" placeholder="How are you feeling today? (e.g., happy, sad, energetic, relaxed)">
+            <button class="mood-button" onclick="getMoodRecommendations()">Get Recommendations</button>
+          </div>
+          <div class="mood-results" id="moodResults"></div>
+        </div>
+
+        <!-- New Feature: Collaborative Playlist -->
+        <div class="collaborative-playlist">
+          <div class="collab-title">
+            <span>👥</span>
+            <span>Collaborative Playlist</span>
+          </div>
+          <p class="collab-description">Create and share playlists with friends. Everyone can add, remove, and reorder songs in real-time. Share the code below to invite others to your playlist.</p>
+          <div class="collab-code">
+            <span class="code-value">SPOT-4F8G-92HJ</span>
+            <button class="copy-btn" onclick="copyCode()">Copy</button>
+          </div>
+          <div class="collab-members">
+            <div class="members-title">Current Members (3)</div>
+            <div class="members-list">
+              <div class="member">
+                <div class="member-avatar">U</div>
+                <span>You (Owner)</span>
+              </div>
+              <div class="member">
+                <div class="member-avatar">J</div>
+                <span>James</span>
+              </div>
+              <div class="member">
+                <div class="member-avatar">S</div>
+                <span>Sarah</span>
+              </div>
+            </div>
+          </div>
+          <button class="spotify-btn" onclick="showToast('Creating new collaborative playlist')">Create New Collaborative Playlist</button>
+        </div>
+
+        <!-- New Feature: Concert Finder -->
+        <div class="concert-finder">
+          <div class="concert-title">
+            <span>🎫</span>
+            <span>Find Concerts Near You</span>
+          </div>
+          <p style="margin-bottom: 16px;">Discover live performances from your favorite artists based on your listening history.</p>
+          <div class="location-input">
+            <input type="text" class="location-field" id="locationInput" placeholder="Enter your city or zip code">
+            <button class="location-button" onclick="findConcerts()">Find Concerts</button>
+          </div>
+          <div class="concerts-container" id="concertsContainer"></div>
+        </div>
+
+        <!-- New Feature: Listening Stats -->
+        <div class="listening-stats">
+          <div class="stats-title">
+            <span>📊</span>
+            <span>Your Listening Stats</span>
+          </div>
+          <div class="stats-grid">
+            <div class="stats-card">
+              <div class="stats-card-title">
+                <span>Top Genres</span>
+                <div class="stats-time-range">
+                  <div class="time-option active" onclick="changeTimeRange('genres', 'short')">4 weeks</div>
+                  <div class="time-option" onclick="changeTimeRange('genres', 'medium')">6 months</div>
+                  <div class="time-option" onclick="changeTimeRange('genres', 'long')">All time</div>
+                </div>
+              </div>
+              <div class="genre-bar">
+                <div class="genre-progress" style="--width: 78%; background-color: #1DB954;"></div>
+              </div>
+              <div class="genre-item">
+                <div class="genre-name">Pop</div>
+                <div class="genre-percent">78%</div>
+              </div>
+              <div class="genre-bar">
+                <div class="genre-progress" style="--width: 65%; background-color: #1DB954;"></div>
+              </div>
+              <div class="genre-item">
+                <div class="genre-name">Hip Hop</div>
+                <div class="genre-percent">65%</div>
+              </div>
+              <div class="genre-bar">
+                <div class="genre-progress" style="--width: 47%; background-color: #1DB954;"></div>
+              </div>
+              <div class="genre-item">
+                <div class="genre-name">R&B</div>
+                <div class="genre-percent">47%</div>
+              </div>
+              <div class="genre-bar">
+                <div class="genre-progress" style="--width: 32%; background-color: #1DB954;"></div>
+              </div>
+              <div class="genre-item">
+                <div class="genre-name">Rock</div>
+                <div class="genre-percent">32%</div>
+              </div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">
+                <span>Listening Activity</span>
+                <div class="stats-time-range">
+                  <div class="time-option active" onclick="changeTimeRange('activity', 'week')">This week</div>
+                  <div class="time-option" onclick="changeTimeRange('activity', 'month')">This month</div>
+                </div>
+              </div>
+              <div class="time-chart">
+                <div class="time-bar" style="--height: 30%;" data-hours="1.2 hrs"></div>
+                <div class="time-bar" style="--height: 45%;" data-hours="1.8 hrs"></div>
+                <div class="time-bar" style="--height: 60%;" data-hours="2.4 hrs"></div>
+                <div class="time-bar" style="--height: 40%;" data-hours="1.6 hrs"></div>
+                <div class="time-bar" style="--height: 25%;" data-hours="1.0 hrs"></div>
+                <div class="time-bar" style="--height: 75%;" data-hours="3.0 hrs"></div>
+                <div class="time-bar" style="--height: 100%;" data-hours="4.0 hrs"></div>
+              </div>
+              <div class="time-labels">
+                <div class="time-label">M</div>
+                <div class="time-label">T</div>
+                <div class="time-label">W</div>
+                <div class="time-label">T</div>
+                <div class="time-label">F</div>
+                <div class="time-label">S</div>
+                <div class="time-label">S</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Feature: AI-Powered Music Discovery -->
+        <div class="discovery-feature">
+          <div class="discovery-title">
+            <span>✨</span>
+            <span>AI-Powered Music Discovery</span>
+          </div>
+          <p style="margin-bottom: 16px;">Discover new music tailored to your preferences. Select your favorite genres and get personalized recommendations.</p>
+          <div class="genre-selector" id="genreSelector">
+            <div class="genre-chip" onclick="toggleGenre(this)">Pop</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">Rock</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">Hip Hop</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">R&B</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">Electronic</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">Country</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">Jazz</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">Classical</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">Indie</div>
+            <div class="genre-chip" onclick="toggleGenre(this)">Metal</div>
+          </div>
+          <button class="spotify-btn" onclick="getAIRecommendations()">Generate Recommendations</button>
+          <div class="mood-results" id="aiResults"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="now-playing-bar">
+    <div class="now-playing-left">
+      <img src="https://i.scdn.co/image/ab67616d00001e02a89ba8287dddea227358611a" class="now-playing-cover" id="nowPlayingCover">
+      <div class="now-playing-info">
+        <div class="now-playing-song" id="nowPlayingSong">Vrindavan Jaungi</div>
+        <div class="now-playing-artist" id="nowPlayingArtist">The Weeknd</div>
+      </div>
+      <div class="now-playing-like" id="likeButton" onclick="toggleLike()">♡</div>
+    </div>
+    <div class="now-playing-center">
+      <div class="playback-controls">
+        <div class="playback-control" onclick="shuffle()">⇋</div>
+        <div class="playback-control" onclick="previousSong()">◄◄</div>
+        <div class="playback-control play-pause" id="playPause" onclick="togglePlayPause()">▶</div>
+        <div class="playback-control" onclick="nextSong()">►►</div>
+        <div class="playback-control" onclick="repeat()">🔄</div>
+      </div>
+      <div class="playback-bar">
+        <div class="playback-time" id="currentTime">0:00</div>
+        <div class="progress-container" onclick="seek(event)">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="playback-time" id="totalTime">3:20</div>
+      </div>
+    </div>
+    <div class="now-playing-right">
+      <div class="volume-container">
+        <div class="volume-icon" onclick="toggleMute()">🔊</div>
+        <div class="volume-bar" onclick="setVolume(event)">
+          <div class="volume-level" id="volumeLevel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Current view state
+    let currentView = 'home';
+    let navigation = {
+      history: ['home'],
+      currentIndex: 0
+    };
+
+    // Player state
+    let playerState = {
+      isPlaying: false,
+      isMuted: false,
+      volume: 65,
+      progress: 30,
+      currentTime: 0,
+      totalTime: 200,
+      interval: null,
+      liked: false
+    };
+
+    // Initialize time-based greeting
+    function updateGreeting() {
+      const hour = new Date().getHours();
+      const greetingEl = document.getElementById('greeting');
+      let greeting = 'Good evening';
+      
+      if (hour >= 5 && hour < 12) {
+        greeting = 'Good morning';
+      } else if (hour >= 12 && hour < 18) {
+        greeting = 'Good afternoon';
+      }
+      
+      greetingEl.textContent = greeting;
+    }
+    updateGreeting();
+
+    // Toggle theme
+    function toggleTheme() {
+      const body = document.body;
+      const themeSwitch = document.getElementById('themeSwitch');
+      body.classList.toggle('light-mode');
+      themeSwitch.checked = body.classList.contains('light-mode');
+      showToast('Theme changed to ' + (body.classList.contains('light-mode') ? 'light' : 'dark') + ' mode');
+    }
+
+    // Topbar scroll effect
+    const topbar = document.getElementById('topbar');
+    document.querySelector('.main-content').addEventListener('scroll', function() {
+      if (this.scrollTop > 10) {
+        topbar.classList.add('scrolled');
+      } else {
+        topbar.classList.remove('scrolled');
+      }
+    });
+
+    // Toggle sidebar on mobile
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    // Toggle user dropdown
+    function toggleDropdown() {
+      document.getElementById('userDropdown').classList.toggle('active');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const dropdown = document.getElementById('userDropdown');
+      const userButton = document.querySelector('.user-button');
+      
+      if (!userButton.contains(event.target) && dropdown.classList.contains('active')) {
+        dropdown.classList.remove('active');
+      }
+    });
+
+    // Play/Pause button
+    function togglePlayPause() {
+      playerState.isPlaying = !playerState.isPlaying;
+      document.getElementById('playPause').innerHTML = playerState.isPlaying ? '❚❚' : '▶';
+      
+      if (playerState.isPlaying) {
+        if (!playerState.interval) {
+          playerState.interval = setInterval(updateProgress, 1000);
+        }
+      } else {
+        clearInterval(playerState.interval);
+        playerState.interval = null;
+      }
+    }
+    
+    // Update progress
+    function updateProgress() {
+      if (playerState.currentTime >= playerState.totalTime) {
+        playerState.currentTime = 0;
+        clearInterval(playerState.interval);
+        playerState.interval = null;
+        playerState.isPlaying = false;
+        document.getElementById('playPause').innerHTML = '▶';
+        updateProgressUI();
+        return;
+      }
+      
+      playerState.currentTime += 1;
+      updateProgressUI();
+    }
+    
+    function updateProgressUI() {
+      playerState.progress = (playerState.currentTime / playerState.totalTime) * 100;
+      document.getElementById('progressBar').style.width = playerState.progress + '%';
+      
+      const currentMinutes = Math.floor(playerState.currentTime / 60);
+      const currentSeconds = Math.floor(playerState.currentTime % 60);
+      document.getElementById('currentTime').textContent = `${currentMinutes}:${currentSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Seek through track
+    function seek(event) {
+      const progressContainer = document.querySelector('.progress-container');
+      const containerWidth = progressContainer.offsetWidth;
+      const clickPosition = event.offsetX;
+      
+      playerState.progress = (clickPosition / containerWidth) * 100;
+      playerState.currentTime = (playerState.progress / 100) * playerState.totalTime;
+      
+      document.getElementById('progressBar').style.width = playerState.progress + '%';
+      updateProgressUI();
+    }
+    
+    // Set volume
+    function setVolume(event) {
+      const volumeBar = document.querySelector('.volume-bar');
+      const containerWidth = volumeBar.offsetWidth;
+      const clickPosition = event.offsetX;
+      
+      playerState.volume = (clickPosition / containerWidth) * 100;
+      document.getElementById('volumeLevel').style.width = playerState.volume + '%';
+      
+      if (playerState.volume === 0) {
+        document.querySelector('.volume-icon').textContent = '🔇';
+      } else if (playerState.volume < 30) {
+        document.querySelector('.volume-icon').textContent = '🔈';
+      } else if (playerState.volume < 70) {
+        document.querySelector('.volume-icon').textContent = '🔉';
+      } else {
+        document.querySelector('.volume-icon').textContent = '🔊';
+      }
+    }
+    
+    // Toggle mute
+    function toggleMute() {
+      playerState.isMuted = !playerState.isMuted;
+      
+      if (playerState.isMuted) {
+        document.getElementById('volumeLevel').style.width = '0%';
+        document.querySelector('.volume-icon').textContent = '🔇';
+      } else {
+        document.getElementById('volumeLevel').style.width = playerState.volume + '%';
+        
+        if (playerState.volume < 30) {
+          document.querySelector('.volume-icon').textContent = '🔈';
+        } else if (playerState.volume < 70) {
+          document.querySelector('.volume-icon').textContent = '🔉';
+        } else {
+          document.querySelector('.volume-icon').textContent = '🔊';
+        }
+      }
+    }
+    
+    // Toggle like button
+    function toggleLike() {
+      playerState.liked = !playerState.liked;
+      document.getElementById('likeButton').textContent = playerState.liked ? '❤️' : '♡';
+      document.getElementById('likeButton').classList.toggle('active', playerState.liked);
+      
+      if (playerState.liked) {
+        showToast('Added to your Liked Songs');
+      } else {
+        showToast('Removed from your Liked Songs');
+      }
+    }
+    
+    // Next song
+    function nextSong() {
+      showToast('Skipping to next track');
+      // Simulate changing tracks
+      playSong('Abhi Na Jao Chorke', 'Asha Voshle', 'https://i.scdn.co/image/ab67616d00001e02fbe87438ee8a4f2a220d1960');
+    }
+    
+    // Previous song
+    function previousSong() {
+      showToast('Playing previous track');
+      // Simulate changing tracks
+      playSong('Sun Ri Sakhi', 'Harihaaran', 'https://i.scdn.co/image/ab67616d00001e0274b606c1d7f9c8b6f1ea6f8f');
+    }
+    
+    // Shuffle
+    function shuffle() {
+      showToast('Shuffle ' + (Math.random() > 0.5 ? 'enabled' : 'disabled'));
+    }
+    
+    // Repeat
+    function repeat() {
+      showToast('Repeat mode changed');
+    }
+
+    // Play song from card
+    function playSong(title, artist, coverSrc) {
+      // Update now playing bar
+      document.getElementById('nowPlayingSong').textContent = title;
+      document.getElementById('nowPlayingArtist').textContent = artist;
+      document.getElementById('nowPlayingCover').src = coverSrc;
+      
+      // Reset progress
+      playerState.currentTime = 0;
+      playerState.progress = 0;
+      playerState.totalTime = 180 + Math.floor(Math.random() * 120); // Random duration
+      
+      // Format total time
+      const totalMinutes = Math.floor(playerState.totalTime / 60);
+      const totalSeconds = Math.floor(playerState.totalTime % 60);
+      document.getElementById('totalTime').textContent = `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+      
+      // Update progress bar
+      document.getElementById('progressBar').style.width = '0%';
+      
+      // Set playing state
+      playerState.isPlaying = true;
+      document.getElementById('playPause').innerHTML = '❚❚';
+      
+      // Reset like state
+      playerState.liked = false;
+      document.getElementById('likeButton').textContent = '♡';
+      document.getElementById('likeButton').classList.remove('active');
+      
+      // Start progress interval
+      clearInterval(playerState.interval);
+      playerState.interval = setInterval(updateProgress, 1000);
+      
+      // Show toast
+      showToast(`Now playing: ${title}`);
+    }
+
+    // Mood-based music recommendation
+    function getMoodRecommendations() {
+      const moodInput = document.getElementById('moodInput').value.toLowerCase();
+      const resultsContainer = document.getElementById('moodResults');
+      resultsContainer.innerHTML = '';
+      
+      if (!moodInput.trim()) {
+        showToast('Please enter your mood', 'error');
+        return;
+      }
+      
+      // Show loader
+      resultsContainer.innerHTML = '<div style="display: flex; justify-content: center; padding: 20px;"><div class="loader"></div></div>';
+      
+      // Simulate API call
+      setTimeout(() => {
+        // Mock data based on mood
+        const moodRecommendations = {
+          happy: [
+            {title: "Happy", artist: "Pritam , Shreya Ghoshal", cover: "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000d72ce13e129acd5e9ef31fb3f5c2"},
+            {title: "Kesariya tera ishq hai piya", artist: "Arijit Singh", cover: "https://i.scdn.co/image/ab67706f00000002261b4231fdb64c7adbdd7d1c"},
+            {title: " Sunshine", artist: "Suraj Jhagan , Sharman Joshi", cover: "https://i.scdn.co/image/ab67616d0000aa54593dd16691c117c716e210ae"},
+            {title: "Can't Stop the Feeling!", artist: "Justin Timberlake", cover: "https://i.scdn.co/image/ab67616d0000b273ef37416970812293c08e8a78"}
+          ],
+          sad: [
+            {title: "Roke na ruke naina", artist: "Arijit Singh", cover: "https://i.scdn.co/image/ab67616d0000b273fa3617fcd0dd0f23e7174219"},
+            {title: "Agar Tum Sath ho", artist: "Arijit Singh", cover: "https://i.scdn.co/image/ab67616d0000b273da50894e074ecd5ce61de0a1"},
+            {title: "All I Want", artist: "Kodaline", cover: "https://i.scdn.co/image/ab67616d0000b2733e42854096da9a3b1ca901c9"},
+            {title: "when the party's over", artist: "Billie Eilish", cover: "https://i.scdn.co/image/ab67616d0000b27350a3147b4edd7701a876c6ce"}
+          ],
+          energetic: [
+            {title: "Starurday", artist: "Sharib toshi, Bdsha, Akriti Kakkar, Indeep Baskhi", cover: "https://i.scdn.co/image/ab67616d0000b273cf1f4aba2ac8c829cee87bcc"},
+            {title: "Batemeez dil", artist: "Pritam", cover: "https://i.scdn.co/image/ab67616d0000b273707ea5b8023ac77d31756ed4"},
+            {title: "Chader Pahar", artist: "Arijit Singh", cover: "https://i.scdn.co/image/ab67616d0000b2735ca50aa9b2019e6afdd96cce"},
+            {title: "Uptown Funk", artist: "Mark Ronson, Bruno Mars", cover: "https://i.scdn.co/image/ab67616d0000b273e419ccba0baa8bd3f3d7abf2"}
+          ],
+          relaxed: [
+            {title: "Tum Se Hi", artist: "Pritam , Mohit Chauhan , Irshad Kamil", cover: "https://i.scdn.co/image/ab67616d0000b27352fe6875028c892308ffc2f7"},
+            {title: "Ishq Bulawa", artist: "Sanam Puri, Vishal-Shakhar, Shipra Goyal", cover: "https://i.scdn.co/image/ab67616d0000b2732025db071cd9dd7e8023e01e"},
+            {title: "Obosheshe", artist: "Arijit Singh", cover: "https://i.scdn.co/image/ab67616d0000b273003e7bd20dcce5e94d03a827"},
+            {title: "Pure Shores", artist: "All Saints", cover: "https://i.scdn.co/image/ab67616d0000b273c919cc963e27a28375201a5a"}
+          ],
+          chill: [
+            {title: "Dill Meri Na Sune", artist: "Atif Islam Payal Dev", cover: "https://i.scdn.co/image/ab67616d00001e02b10cd00a5865ea695f322dd7"},
+            {title: "Tore Niye Jai", artist: "zubin Garg , Mahalakhmi Iyer", cover: "https://i.scdn.co/image/ab67616d00001e022c016718f6aff150c643639a"},
+            {title: "Mon Boleche Amar", artist: "Jeet Ganguly", cover: "https://i.scdn.co/image/ab67616d00001e02e4a4cff9c6f1d80cf22354f1"},
+            {title: "Vienna", artist: "Billy Joel", cover: "https://i.scdn.co/image/ab67616d00001e026ce61113662ecf693b605ee5"}
+          ],
+          focused: [
+            {title: "Lakshya", artist: "Shankar-Ehasaan-Loy", cover: "https://i.scdn.co/image/ab67616d00001e02441b53722d32e65078a35a14"},
+            {title: "Ashayaein", artist: "Sandeep Maheswari", cover: "https://i.scdn.co/image/ab67616d00001e02fb37e33b94aca38c4479f62d"},
+            {title: "Rat Mar", artist: "Vishal -Shekhar", cover: "https://i.scdn.co/image/ab67616d00001e02ad40f4e70b2f2a2a6052d49d"},
+            {title: "Time", artist: "Hans Zimmer", cover: "https://i.scdn.co/image/ab67616d00001e02982320da137d0de34410df61"}
+          ],
+          romantic: [
+            {title: "Dujone Title", artist: "Jeet, June", cover: "https://i.scdn.co/image/ab67616d00001e021698d639e32c0d4c23a3ccfc"},
+            {title: "Rim Jhim E Dharate", artist: "Shaan, Shreya", cover: "https://i.scdn.co/image/ab67616d00001e023c339b5a3e49c5c6af5e50b0"},
+            {title: "Bhalobashar Morshum", artist: "Arijit Singh, Shreya Ghoshal", cover: "https://i.scdn.co/image/ab67616d00001e023339a82ea04f47305690e40d"},
+            {title: "Lag Ja Gale se Phir", artist: "Lata Magheskar", cover: "https://i.scdn.co/image/ab67616d00001e023339a82ea04f47305690e40d"}
+          ]
+        };
+        
+        // Default recommendations for unknown moods
+        let recommendedSongs = [
+          {title: "Chokhe Chokhe Eto Kotha", artist: "Shaan , Shreya Ghoshal", cover: "https://i.scdn.co/image/ab67616d00001e02d4fa8900198b3d0316f4674c"},
+          {title: "Jani na", artist: "Nachiketa Chkrobarty, Jeet Ganguly", cover: "https://i.scdn.co/image/ab67616d00001e0227790abdbe960f0ece3272de"},
+          {title: "Geet Govindam", artist: "Prianshi Agarwal", cover: "https://i.scdn.co/image/ab67616d00001e0276c5d016d4100b9a42d462e6"},
+          {title: "Kassam KI ", artist: "Chithra, Shaan", cover: "https://i.scdn.co/image/ab67616d00001e026a5211b314641373c4209663"}
+        ];
+        
+        // Check for matching mood
+        for (const [key, songs] of Object.entries(moodRecommendations)) {
+          if (moodInput.includes(key)) {
+            recommendedSongs = songs;
+            break;
+          }
+        }
+        
+        // Clear loader
+        resultsContainer.innerHTML = '';
+        
+        // Generate song cards
+        recommendedSongs.forEach(song => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.onclick = () => playSong(song.title, song.artist, song.cover);
+          card.innerHTML = `
+            <img src="${song.cover}" class="card-img" alt="${song.title}">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">${song.title}</div>
+            <div class="card-description">${song.artist}</div>
+          `;
+          resultsContainer.appendChild(card);
+        });
+        
+        showToast('Mood recommendations ready!', 'success');
+      }, 1500);
+    }
+    
+    // Set mood from tag
+    function setMood(mood) {
+      document.getElementById('moodInput').value = mood;
+      getMoodRecommendations();
+    }
+
+    // Toggle genre selection
+    function toggleGenre(element) {
+      element.classList.toggle('active');
+    }
+
+    // AI-based music recommendations
+    function getAIRecommendations() {
+      const aiResults = document.getElementById('aiResults');
+      aiResults.innerHTML = '';
+      
+      // Get selected genres
+      const selectedGenres = [];
+      document.querySelectorAll('.genre-chip.active').forEach(el => {
+        selectedGenres.push(el.textContent);
+      });
+      
+      if (selectedGenres.length === 0) {
+        showToast('Please select at least one genre', 'warning');
+        return;
+      }
+      
+      // Show loader
+      aiResults.innerHTML = '<div style="display: flex; justify-content: center; padding: 20px;"><div class="loader"></div></div>';
+      
+      // Simulate API call
+      setTimeout(() => {
+        // Mock AI recommendations based on genre combinations
+        let recommendations = [];
+        
+        // Rock + Electronic fusion
+        if (selectedGenres.includes('Rock') && selectedGenres.includes('Electronic')) {
+          recommendations = [
+            {title: "When It's Done", artist: "Hybrid Theory", cover: "https://i.scdn.co/image/ab67616d000048516db1a3e8c5c9deb759ba21b1"},
+            {title: "Survival", artist: "Muse", cover: "https://i.scdn.co/image/ab67616d00004851b6d4566db0d12894a1a3b7a2"},
+            {title: "Take A Bow", artist: "Muse", cover: "https://i.scdn.co/image/ab67616d00004851da25f8f7ca54558db74c1f2b"},
+            {title: "Midnight City", artist: "M83", cover: "https://i.scdn.co/image/ab67616d000048514ae1c4c5c45aabe565499163"}
+          ];
+        } 
+        // Hip Hop and Jazz fusion
+        else if (selectedGenres.includes('Hip Hop') && selectedGenres.includes('Jazz')) {
+          recommendations = [
+            {title: "Wesley's Theory", artist: "Kendrick Lamar", cover: "https://i.scdn.co/image/ab67616d000048516d4dde8da5f5d54c417b0344"},
+            {title: "So What", artist: "Miles Davis", cover: "https://i.scdn.co/image/ab67616d00004851a6e10b9e56fcf5f37f60cf93"},
+            {title: "ELEMENT.", artist: "Kendrick Lamar", cover: "https://i.scdn.co/image/ab67616d000048516d4dde8da5f5d54c417b0344"},
+            {title: "Take Five", artist: "Dave Brubeck", cover: "https://i.scdn.co/image/ab67616d00004851c4fe1ddc28bfb7b02efe3b3e"}
+          ];
+        }
+        // Pop and Country fusion
+        else if (selectedGenres.includes('Pop') && selectedGenres.includes('Country')) {
+          recommendations = [
+            {title: "Meant to Be", artist: "Bebe Rexha, Florida Georgia Line", cover: "https://i.scdn.co/image/ab67616d00004851ca7c2f1531c20250b2d78ae2"},
+            {title: "The Middle", artist: "Zedd, Maren Morris, Grey", cover: "https://i.scdn.co/image/ab67616d000048518d25374986425fe526fedee1"},
+            {title: "Body Like A Back Road", artist: "Sam Hunt", cover: "https://i.scdn.co/image/ab67616d00004851cb16aafb60a101ddd22a11a6"},
+            {title: "Speechless", artist: "Dan + Shay", cover: "https://i.scdn.co/image/ab67616d000048518e7ea9a3a7a91cc8b82d5a55"}
+          ];
+        }
+        // Classical and Electronic fusion
+        else if (selectedGenres.includes('Classical') && selectedGenres.includes('Electronic')) {
+          recommendations = [
+            {title: "Experience", artist: "Ludovico Einaudi, Daniel Hope", cover: "https://i.scdn.co/image/ab67616d000048515fa9d5fb35fba69e83cd7be1"},
+            {title: "Strobe", artist: "deadmau5", cover: "https://i.scdn.co/image/ab67616d00004851ebe908d1bb13a5a4468fe22e"},
+            {title: "Avril 14th", artist: "Aphex Twin", cover: "https://i.scdn.co/image/ab67616d00004851df9a35baaa98675956b5f934"},
+            {title: "On The Nature Of Daylight", artist: "Max Richter", cover: "https://i.scdn.co/image/ab67616d00004851e3783ae607b38d361e6fca32"}
+          ];
+        }
+        // Single genre recommendations
+        else {
+          const genre = selectedGenres[0];
+          switch(genre) {
+            case 'Pop':
+              recommendations = [
+                {title: "Bad Guy", artist: "Billie Eilish", cover: "https://i.scdn.co/image/ab67616d000048510db43dbee7e80594e84dd8c8"},
+                {title: "Watermelon Sugar", artist: "Harry Styles", cover: "https://i.scdn.co/image/ab67616d0000485177fdcfda6535601aff081b6a"},
+                {title: "positions", artist: "Ariana Grande", cover: "https://i.scdn.co/image/ab67616d00004851de6a0ed1e0c85fbfc5eeffad"},
+                {title: "Therefore I Am", artist: "Billie Eilish", cover: "https://i.scdn.co/image/ab67616d000048516b9e5142b924b7bb4d7177c9"}
+              ];
+              break;
+            case 'Rock':
+              recommendations = [
+                {title: "Sweet Child O' Mine", artist: "Guns N' Roses", cover: "https://i.scdn.co/image/ab67616d00004851ca579602e4d589c1a26b6a3e"},
+                {title: "Bohemian Rhapsody", artist: "Queen", cover: "https://i.scdn.co/image/ab67616d00004851cada27ad17ac7e5326c32fff"},
+                {title: "Back In Black", artist: "AC/DC", cover: "https://i.scdn.co/image/ab67616d00004851b4ad7ebaf4575f120eb3f193"},
+                {title: "Creep", artist: "Radiohead", cover: "https://i.scdn.co/image/ab67616d00004851c8b444df094279e70d0ed856"}
+              ];
+              break;
+            case 'Hip Hop':
+              recommendations = [
+                {title: "SICKO MODE", artist: "Travis Scott", cover: "https://i.scdn.co/image/ab67616d000048512a41cb613af97c6b240eee64"},
+                {title: "God's Plan", artist: "Drake", cover: "https://i.scdn.co/image/ab67616d0000485113447d7e1dba1ffdce8d5794"},
+                {title: "HUMBLE.", artist: "Kendrick Lamar", cover: "https://i.scdn.co/image/ab67616d000048516d4dde8da5f5d54c417b0344"},
+                {title: "No Role Modelz", artist: "J. Cole", cover: "https://i.scdn.co/image/ab67616d0000485177836be0354288410bdf8ee1"}
+              ];
+              break;
+            case 'Jazz':
+              recommendations = [
+                {title: "Take Five", artist: "Dave Brubeck", cover: "https://i.scdn.co/image/ab67616d00004851c4fe1ddc28bfb7b02efe3b3e"},
+                {title: "So What", artist: "Miles Davis", cover: "https://i.scdn.co/image/ab67616d00004851a6e10b9e56fcf5f37f60cf93"},
+                {title: "My Favorite Things", artist: "John Coltrane", cover: "https://i.scdn.co/image/ab67616d00004851b901a4e5dfc398f8b0c387e4"},
+                {title: "Blue In Green", artist: "Miles Davis", cover: "https://i.scdn.co/image/ab67616d00004851df0ef7baa1e88f8f4bd28b5f"}
+              ];
+              break;
+            default:
+              recommendations = [
+                {title: "Random Access Memories", artist: "Daft Punk", cover: "https://i.scdn.co/image/ab67616d00004851b8277bda8a6872a1ba3ca990"},
+                {title: "good 4 u", artist: "Olivia Rodrigo", cover: "https://i.scdn.co/image/ab67616d000048514aeaafb3ac7ee2a2c450a051"},
+                {title: "INDUSTRY BABY", artist: "Lil Nas X, Jack Harlow", cover: "https://i.scdn.co/image/ab67616d000048518293cd963a86753252998331"},
+                {title: "drivers license", artist: "Olivia Rodrigo", cover: "https://i.scdn.co/image/ab67616d00004851a91c10fe9472d9bd89802e5a"}
+              ];
+          }
+        }
+        
+        // Clear loader
+        aiResults.innerHTML = '';
+        
+        // Generate song cards
+        recommendations.forEach(song => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.onclick = () => playSong(song.title, song.artist, song.cover);
+          card.innerHTML = `
+            <img src="${song.cover}" class="card-img" alt="${song.title}">
+            <div class="play-button"><i>▶</i></div>
+            <div class="card-title">${song.title}</div>
+            <div class="card-description">${song.artist}</div>
+          `;
+          aiResults.appendChild(card);
+        });
+        
+        showToast('AI recommendations generated!', 'success');
+      }, 2000);
+    }
+    
+    // Time range change for stats
+    function changeTimeRange(section, range) {
+      // Get the container based on the section
+      let container;
+      if (section === 'genres') {
+        container = document.querySelector('.stats-card:first-child .stats-time-range');
+      } else if (section === 'activity') {
+        container = document.querySelector('.stats-card:last-child .stats-time-range');
+      }
+      
+      if (container) {
+        // Remove active class from all options
+        container.querySelectorAll('.time-option').forEach(el => {
+          el.classList.remove('active');
+        });
+        
+        // Add active class to selected option
+        const selectedOption = Array.from(container.querySelectorAll('.time-option')).find(el => el.textContent.toLowerCase().includes(range));
+        if (selectedOption) {
+          selectedOption.classList.add('active');
+        }
+        
+        // Update the data (simulate)
+        if (section === 'genres') {
+          // Shuffle the genre percentages
+          const genreItems = document.querySelectorAll('.genre-item');
+          const genreBars = document.querySelectorAll('.genre-progress');
+          
+          const percentages = [Math.floor(Math.random() * 30) + 50, Math.floor(Math.random() * 20) + 40, Math.floor(Math.random() * 20) + 30, Math.floor(Math.random() * 15) + 20];
+          
+          genreItems.forEach((item, index) => {
+            if (index < percentages.length) {
+              item.querySelector('.genre-percent').textContent = percentages[index] + '%';
+              genreBars[index].style.setProperty('--width', percentages[index] + '%');
+            }
+          });
+        } else if (section === 'activity') {
+          // Shuffle the listening time bars
+          const timeBars = document.querySelectorAll('.time-bar');
+          
+          timeBars.forEach(bar => {
+            const randomHeight = Math.floor(Math.random() * 80) + 20;
+            const randomHours = (randomHeight / 25).toFixed(1);
+            bar.style.setProperty('--height', randomHeight + '%');
+            bar.setAttribute('data-hours', randomHours + ' hrs');
+          });
+        }
+      }
+      
+      showToast('Time range updated', 'success');
+    }
+    
+    // Create playlist
+    function createPlaylist() {
+      showToast('New playlist created', 'success');
+      
+      // Add new playlist to the list
+      const playlists = document.querySelector('.playlists');
+      const newPlaylist = document.createElement('div');
+      newPlaylist.className = 'playlist-item';
+      newPlaylist.textContent = 'My Playlist #' + (Math.floor(Math.random() * 10) + 1);
+      newPlaylist.onclick = () => showToast('Opening ' + newPlaylist.textContent);
+      playlists.prepend(newPlaylist);
+    }
+    
+    // Copy code
+    function copyCode() {
+      const codeValue = document.querySelector('.code-value').textContent;
+      navigator.clipboard.writeText(codeValue).then(() => {
+        showToast('Code copied to clipboard', 'success');
+      });
+    }
+    
+    // Find concerts
+    function findConcerts() {
+      const locationInput = document.getElementById('locationInput').value;
+      const concertsContainer = document.getElementById('concertsContainer');
+      
+      if (!locationInput.trim()) {
+        showToast('Please enter your location', 'error');
+        return;
+      }
+      
+      // Show loader
+      concertsContainer.innerHTML = '<div style="display: flex; justify-content: center; padding: 20px;"><div class="loader"></div></div>';
+      
+      // Simulate API call
+      setTimeout(() => {
+        // Mock concert data
+        const concerts = [
+          {
+            artist: "The Weeknd",
+            date: "Oct 15, 2025",
+            venue: "Madison Square Garden, New York",
+            image: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80"
+          },
+          {
+            artist: "Dua Lipa",
+            date: "Nov 5, 2025",
+            venue: "Barclays Center, Brooklyn",
+            image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80"
+          },
+          {
+            artist: "Kendrick Lamar",
+            date: "Dec 12, 2025",
+            venue: "Staples Center, Los Angeles",
+            image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80"
+          },
+          {
+            artist: "Taylor Swift",
+            date: "Jan 20, 2026",
+            venue: "United Center, Chicago",
+            image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80"
+          }
+        ];
+        
+        // Clear loader
+        concertsContainer.innerHTML = '';
+        
+        // Generate concert cards
+        concerts.forEach(concert => {
+          const card = document.createElement('div');
+          card.className = 'concert-card';
+          card.innerHTML = `
+            <img src="${concert.image}" class="concert-img" alt="${concert.artist} concert">
+            <div class="concert-info">
+              <div class="concert-date">${concert.date}</div>
+              <div class="concert-artist">${concert.artist}</div>
+              <div class="concert-venue">${concert.venue}</div>
+              <button class="ticket-btn" onclick="showToast('Redirecting to ticket purchase page', 'success')">Get Tickets</button>
+            </div>
+          `;
+          concertsContainer.appendChild(card);
+        });
+        
+        showToast('Concerts found near ' + locationInput, 'success');
+      }, 1500);
+    }
+    
+    // Search functionality
+    function handleSearch() {
+      const searchInput = document.getElementById('searchInput');
+      const searchResults = document.getElementById('searchResults');
+      
+      if (searchInput.value.trim().length > 1) {
+        // Mock search results
+        const results = [
+          {title: "Blinding Lights", artist: "The Weeknd", type: "Song", image: "https://i.scdn.co/image/ab67616d00004851995c9e7246fe4f2f0d49e2ce"},
+          {title: "After Hours", artist: "The Weeknd", type: "Album", image: "https://i.scdn.co/image/ab67616d00004851995c9e7246fe4f2f0d49e2ce"},
+          {title: "The Weeknd", artist: "", type: "Artist", image: "https://i.scdn.co/image/ab67616d00004851995c9e7246fe4f2f0d49e2ce"}
+        ];
+        
+        // Show results
+        searchResults.innerHTML = '';
+        results.forEach(result => {
+          const resultItem = document.createElement('div');
+          resultItem.className = 'search-result-item';
+          resultItem.onclick = () => {
+            if (result.type === 'Song') {
+              playSong(result.title, result.artist, result.image);
+            } else {
+              showToast(`Opening ${result.type}: ${result.title}`, 'success');
+            }
+            searchResults.classList.remove('active');
+          };
+          
+          resultItem.innerHTML = `
+            <img src="${result.image}" class="search-result-img" alt="${result.title}">
+            <div class="search-result-info">
+              <div class="search-result-title">${result.title}</div>
+              <div class="search-result-subtitle">${result.type}${result.artist ? ' • ' + result.artist : ''}</div>
+            </div>
+          `;
+          
+          searchResults.appendChild(resultItem);
+        });
+        
+        searchResults.classList.add('active');
+      } else {
+        searchResults.classList.remove('active');
+      }
+    }
+    
+    // Close search results when clicking outside
+    document.addEventListener('click', function(event) {
+      const searchContainer = document.querySelector('.search-container');
+      const searchResults = document.getElementById('searchResults');
+      
+      if (!searchContainer.contains(event.target) && searchResults.classList.contains('active')) {
+        searchResults.classList.remove('active');
+      }
+    });
+    
+    // Show toast notification
+    function showToast(message, type = 'info') {
+      const toastContainer = document.getElementById('toastContainer');
+      
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = '📣';
+      if (type === 'success') icon = '✅';
+      if (type === 'error') icon = '❌';
+      if (type === 'warning') icon = '⚠️';
+      
+      toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-message">${message}</div>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
+      // Remove toast after 3 seconds
+      setTimeout(() => {
+        toast.remove();
+      }, 3300);
+    }
+    
+    // Change view
+    function changeView(view) {
+      if (view === currentView) return;
+      
+      currentView = view;
+      
+      // Add to navigation history
+      navigation.history = navigation.history.slice(0, navigation.currentIndex + 1);
+      navigation.history.push(view);
+      navigation.currentIndex = navigation.history.length - 1;
+      
+      // Simulate view change
+      showToast(`Navigating to ${view} view`);
+      
+      // Update active sidebar item
+      document.querySelectorAll('.sidebar-item').forEach(item => {
+        const text = item.querySelector('span').textContent.toLowerCase();
+        item.classList.toggle('active', text.includes(view));
+      });
+    }
+    
+    // Navigate back
+    function navigateBack() {
+      if (navigation.currentIndex > 0) {
+        navigation.currentIndex--;
+        const view = navigation.history[navigation.currentIndex];
+        currentView = view;
+        showToast(`Navigating back to ${view} view`);
+        
+        // Update active sidebar item
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+          const text = item.querySelector('span').textContent.toLowerCase();
+          item.classList.toggle('active', text.includes(view));
+        });
+      } else {
+        showToast('No previous page', 'warning');
+      }
+    }
+    
+    // Navigate forward
+    function navigateForward() {
+      if (navigation.currentIndex < navigation.history.length - 1) {
+        navigation.currentIndex++;
+        const view = navigation.history[navigation.currentIndex];
+        currentView = view;
+        showToast(`Navigating forward to ${view} view`);
+        
+        // Update active sidebar item
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+          const text = item.querySelector('span').textContent.toLowerCase();
+          item.classList.toggle('active', text.includes(view));
+        });
+      } else {
+        showToast('No next page', 'warning');
+      }
+    }
+    
+    // Initialize player UI
+    document.getElementById('volumeLevel').style.width = playerState.volume + '%';
+    document.getElementById('progressBar').style.width = playerState.progress + '%';
+    
+    // Format initial times
+    const totalMinutes = Math.floor(playerState.totalTime / 60);
+    const totalSeconds = Math.floor(playerState.totalTime % 60);
+    document.getElementById('totalTime').textContent = `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+    
+    const currentMinutes = Math.floor(playerState.currentTime / 60);
+    const currentSeconds = Math.floor(playerState.currentTime % 60);
+    document.getElementById('currentTime').textContent = `${currentMinutes}:${currentSeconds.toString().padStart(2, '0')}`;
+    
+    // Document click listener for closing dropdowns
+    document.addEventListener('click', (e) => {
+      // Close user dropdown if clicking outside
+      const userDropdown = document.getElementById('userDropdown');
+      const userButton = document.querySelector('.user-button');
+      if (userDropdown.classList.contains('active') && !userButton.contains(e.target)) {
+        userDropdown.classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html>
